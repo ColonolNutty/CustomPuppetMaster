@@ -47,6 +47,8 @@ Scriptname _mindScript extends ReferenceAlias
 	ReferenceAlias Property refBound8 Auto
 	ReferenceAlias Property refBound9 Auto
 	ReferenceAlias Property refBound10 Auto
+	
+	
 	GlobalVariable Property globalMarker Auto
 	Keyword Property npcKeyword Auto
 	Perk Property mindPerk Auto
@@ -2410,6 +2412,7 @@ Scriptname _mindScript extends ReferenceAlias
 		Actor man = iSexActor1
 		Actor woman = iSexActor2
 		Actor third = iSexActor3
+		bool isAggressive = actor1IsVictim || actor2IsVictim || actor3IsVictim
 
 		Actor plr = GetActorRef()
 
@@ -2439,6 +2442,30 @@ Scriptname _mindScript extends ReferenceAlias
 			Untie(third)
 		endif
 
+		if(man == none)
+			Debug.Trace("Man was None")
+		endif
+		if(woman == none)
+			Debug.Trace("Woman was None")
+		endif
+		if(third == none)
+			Debug.Trace("Third was None")
+		endif
+
+		Actor[] positions
+		positions = SexLab.MakeActorArray(man, woman, third)
+		Debug.Trace("position count comes to " + positions.Length)
+		
+		Actor victim
+		
+		if(actor1IsVictim)
+			victim = man
+		elseif(actor2IsVictim)
+			victim = woman
+		elseif(actor3IsVictim)
+			victim = third
+		endif
+		
 		sslBaseAnimation[] anims
 		Debug.Trace("Getting animations using tags 1: " + iSexTag1 + " 2: " + iSexTag2 + " 3: " + iSexTag3 + " No: " + iSexNoTag)
 		if(iSexTag1 == "pee" || iSexTag1 == "defec")
@@ -2454,32 +2481,9 @@ Scriptname _mindScript extends ReferenceAlias
 			endif
 			curPeeTimer = 0
 		else
-			anims = SexLab.GetAnimationsByTag(actorCount, iSexTag1, iSexTag2, iSexTag3, iSexNoTag)
+			anims = SexLab.PickAnimationsByActors(positions, 64, isAggressive); SexLab.GetAnimationsByTag(actorCount, iSexTag1, iSexTag2, iSexTag3, iSexNoTag)
 		endif
 		
-		if(man == none)
-			Debug.Trace("Man was None")
-		endif
-		if(woman == none)
-			Debug.Trace("Woman was None")
-		endif
-		if(third == none)
-			Debug.Trace("Third was None")
-		endif
-
-		Actor[] positions
-		positions = SexLab.MakeActorArray(man, woman, third)
-		Debug.Trace("positions comes to " + positions.Length)
-		
-		Actor victim
-		
-		if(actor1IsVictim)
-			victim = man
-		elseif(actor2IsVictim)
-			victim = woman
-		elseif(actor3IsVictim)
-			victim = third
-		endif
 		
 		bool bedding
 
@@ -2496,7 +2500,11 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 		
 		if(!SexLab.StartWithController(positions, anims, victim, none, bedding, hookName))
-			Debug.MessageBox("Failed to start Sex")
+			string msg = "Failed to start Sex"
+			If anims == None || anims.Length == 0
+				msg = "Failed to start Sex because no anims were found"
+			EndIf
+			Debug.MessageBox(msg)
 			return false
 		endif
 		return true
@@ -2509,9 +2517,27 @@ Scriptname _mindScript extends ReferenceAlias
 
 		Actor[] sexActors = SexLab.MakeActorArray(target)
 
-		sslBaseAnimation[] anims = SexLab.GetAnimationsByTag(1, "Masturbation")
-		SexLab.StartSex(sexActors, anims, allowBed = target == PlayerRef)
+		sslBaseAnimation[] anims = SexLab.PickAnimationsByActors(sexActors)
+		sslBaseAnimation[] masturbationAnims = GetAnimationsWithTag(anims, "Masturbation")
+		SexLab.StartSex(sexActors, masturbationAnims, allowBed = target == PlayerRef)
 	endfunction
+	
+	sslBaseAnimation[] Function GetAnimationsWithTag(sslBaseAnimation[] anims, string tag)
+		sslBaseAnimation[] taggedAnims = new sslBaseAnimation[127]
+		int currentTaggedIdx = 0
+		string[] tags = new string[1]
+		tags[0] = tag
+		int i = 0
+		while i < anims.Length
+			sslBaseAnimation anim = anims[i]
+			If(anim.HasOneTag(tags))
+				taggedAnims[currentTaggedIdx] = anim
+				currentTaggedIdx += 1
+			EndIf
+			i += 1
+		endWhile
+		return taggedAnims
+	EndFunction
 
 	function Necro(Actor source, Actor target)
 		if(!source || !target || !target.IsDead() || source.IsDead())
