@@ -1,5 +1,7 @@
 Scriptname _mindScript extends ReferenceAlias  
 
+Import __NuttyExtensions
+
 	Actor PlayerRef
 	ReferenceAlias Property refCharm1 Auto
 	ReferenceAlias Property refCharm2 Auto
@@ -174,7 +176,7 @@ Scriptname _mindScript extends ReferenceAlias
 		EndIf
 	EndFunction
 
-	event OnInit()
+	Event OnInit()
 		InitReferenceAliases()
 		PlayerRef = Game.GetPlayer()
 		aggression = new int[5]
@@ -208,7 +210,7 @@ Scriptname _mindScript extends ReferenceAlias
 		globalStop.SetValue(0)
 
 		RegisterForSingleUpdate(3)
-	endevent
+	EndEvent
 
 	Function UpdateRelations(ReferenceAlias[] refAliases)
 		int aLength = refAliases.Length
@@ -219,19 +221,20 @@ Scriptname _mindScript extends ReferenceAlias
 		EndWhile
 	EndFunction
 
-	event OnPlayerLoadGame()
+	Event OnPlayerLoadGame()
 		PlayerRef = Game.GetPlayer()
 		InitReferenceAliases()
 		UpdateRelations(refsCharm)
-	endevent
+	EndEvent
  
-	event OnUpdate()
+	Event OnUpdate()
 		CheckAliases()
 
 		if(PlayerRef && !PlayerRef.HasPerk(mindPerk))
 			PlayerRef.AddPerk(mindPerk)
 		endif
 
+		; TODO: Clean this up a bit
 		if(curPeeType < 0 && curPeeScene)
 			if(curPeeType > -10)
 				; nothing
@@ -362,53 +365,55 @@ Scriptname _mindScript extends ReferenceAlias
 			endif
 			curBasicKey = 0
 		endif
-	endevent
+	EndEvent
 
-	event OnKeyUp(int keyCode, float holdTime)
-		if(keyCode == curBasicKey)
-			if(Game.IsMovementControlsEnabled() && !Utility.IsInMenuMode())
-				Actor me = GetActorRef()
-				if(me)
-					int choice = actionMessage.show()
-					if(choice == 0)
-						Pee(me)
-					elseif(choice == 1)
-						Defecate(me)
-					elseif(choice == 2)
-						DefecateAndPee(me)
-					elseif(choice == 3)
-						Masturbate(me)
-					elseif(choice == 4)
-						Debug.Trace("[CN] Doing pose thing")
-						Pose(me)
-					elseif(choice == 5)
-						; Nothing was selected
-					endif
-				endif
-			endif
+	Event OnKeyUp(int keyCode, float holdTime)
+		If(keyCode != curBasicKey || !Game.IsMovementControlsEnabled() || Utility.IsInMenuMode())
+			Return
+		EndIf
+		
+		Actor akActor = GetActorRef()
+		If(akActor == None)
+			Return
+		EndIf
+		
+		int choice = actionMessage.show()
+		if(choice == 0)
+			Pee(akActor)
+		elseif(choice == 1)
+			Defecate(akActor)
+		elseif(choice == 2)
+			DefecateAndPee(akActor)
+		elseif(choice == 3)
+			Masturbate(akActor)
+		elseif(choice == 4)
+			Debug.Trace("[CN] Doing Puppet Master Posing")
+			Pose(akActor)
+		elseif(choice == 5)
+			; Nothing was selected
 		endif
-	endevent
+	EndEvent
 	
-	_mindConfig function GetConfig()
-		return configQuest as _mindConfig
-	endfunction
-	
-	function ManuallyLoot(Actor akTarget)
+	Function ManuallyLoot(Actor akTarget)
 		if(akTarget != None && PlayerRef != None)
 			akTarget.Activate(PlayerRef)
 		endif
 	EndFunction
 
+	_mindConfig function GetConfig()
+		return configQuest as _mindConfig
+	endfunction
+	
 ;End Initialization
 	
 	
 	
 ;Begin Menus
-	function SendShow()
+	Function SendShow()
 		Debug.Notification("Use show power to target someone.")
 	endfunction
 
-	function SendPuppetList()
+	Function SendPuppetList()
 		string msg = "Puppets currently under your control:"
 		int aLength = refsCharm.Length
 		int i = 0
@@ -428,10 +433,11 @@ Scriptname _mindScript extends ReferenceAlias
 		Debug.MessageBox(msg)
 	endfunction
 
-	string function GetPuppetString(Actor target)
+	string Function GetPuppetString(Actor target)
 		if(!target)
 			return ""
 		endif
+		
 		string name = GetActorName(target)
 		if(!name)
 			name = "unknown"
@@ -439,16 +445,17 @@ Scriptname _mindScript extends ReferenceAlias
 
 		name = name + " ("
 		if(IsFollowing(target))
-			name = name + "following)"
+			name = name + "following"
 		elseif(IsWaiting(target))
-			name = name + "waiting)"
+			name = name + "waiting"
 		elseif(IsFrozen(target))
-			name = name + "frozen)"
+			name = name + "frozen"
 		elseif(IsMarker(target))
-			name = name + "beacon)"
+			name = name + "beacon"
 		else
-			name = name + "normal routine)"
+			name = name + "normal routine"
 		endif
+		name = name + ")"
 		if(IsTied(target))
 			name = name + " (bound)"
 		endif
@@ -466,12 +473,8 @@ Scriptname _mindScript extends ReferenceAlias
 	Form[] actorTwoStrippedItems
 	Form[] actorThreeStrippedItems
 
-	function Undress(Actor target)
-		if(!target)
-			return
-		endif
-
-		if(!IsDressed(target))
+	Function Undress(Actor target)
+		if(!target || !IsDressed(target))
 			return
 		endif
 
@@ -493,12 +496,12 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function RedressActor(Actor target, Form[] strippedItems, int indexToClear)
+	Function RedressActor(Actor target, Form[] strippedItems, int indexToClear)
 		strippedActors[indexToClear] = None
 		SexLab.UnstripActor(target, strippedItems)
 	EndFunction
 
-	function Dress(Actor target)
+	Function Dress(Actor target)
 		if(!target || target.IsDisabled() || target.IsDead())
 			return
 		endif
@@ -569,7 +572,7 @@ Scriptname _mindScript extends ReferenceAlias
 
 ;Begin Actions
 
-	function PlaceMarker()
+	Function PlaceMarker()
 		if(!PlayerRef)
 			return
 		endif
@@ -591,40 +594,45 @@ Scriptname _mindScript extends ReferenceAlias
 		
 ;Begin Everything Else
 	
-	function CheckAlias(ReferenceAlias refAlias, bool boundAlias = false)
+	Actor Function CheckAlias(ReferenceAlias refAlias, bool boundAlias = false)
 		if(!refAlias || !refAlias.GetReference())
-			return
+			return None
 		endif
 
 		Actor target = refAlias.GetActorRef()
 		if(!target || target.IsDisabled() || target.IsDead() || (boundAlias && !IsTied(target)))
 			refAlias.Clear()
+			if(target == None)
+				Return None
+			EndIf
 			bool charmed = IsReferenceCharmed(refAlias)
 			Debug.Trace("Ref Alias is Charmed: " + charmed)
-			if(target && charmed)
+			if(charmed)
 				string name = GetActorName(target)
 				if(name)
 					Debug.Notification(name + " has died.")
 				else
 					Debug.Notification("Someone under your influence has died.")
 				endif
-			elseif(target && boundAlias)
+			elseif(boundAlias)
 				Debug.Notification(GetActorName(target) + " is no longer bound.")
 			endif
 		endif
+		return target
 	endfunction
 
-	function CheckAliases(bool onlyBound = false)
-		if(!onlyBound)
-			CheckAliasOf(refsCharm, false, true)
-			CheckAliasOf(refsFollow)
-			CheckAliasOf(refsWait)
-			CheckAliasOf(refsFreeze)
-			CheckAliasOf(refsTravel)
-			CheckAliasOf(refsGoMarker)
-		endif
+	Function CheckAliases(bool onlyBound = false)
+		if(onlyBound)
+			CheckAliasOf(refsBound, true)
+			Return
+		EndIf
 		
-		CheckAliasOf(refsBound, true)
+		CheckAliasOf(refsCharm, false, true)
+		CheckAliasOf(refsFollow)
+		CheckAliasOf(refsWait)
+		CheckAliasOf(refsFreeze)
+		CheckAliasOf(refsTravel)
+		CheckAliasOf(refsGoMarker)
 	endfunction
 
 	Function CheckAliasOf(ReferenceAlias[] refAliases, bool isBound = false, bool updatePuppets = false)
@@ -632,15 +640,15 @@ Scriptname _mindScript extends ReferenceAlias
 		int i = 0
 		While(i < aLength)
 			ReferenceAlias refAlias = refAliases[i]
-			CheckAlias(refAlias, isBound)
+			Actor actorRef = CheckAlias(refAlias, isBound)
 			i += 1
-			If(updatePuppets)
-				UpdatePuppet(refAlias.GetActorRef(), i)
+			If(updatePuppets && actorRef)
+				UpdatePuppet(actorRef, i)
 			EndIf
 		EndWhile
 	EndFunction
 
-	function UpdatePuppet(Actor target, int index)
+	Function UpdatePuppet(Actor target, int index)
 		if(!target)
 			return
 		endif
@@ -650,19 +658,19 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	string function GetActorName(Actor akTarget)
+	string Function GetActorName(Actor akTarget)
 		if(!akTarget)
-			return ""
+			return None
 		endif
 
 		ActorBase akBase = akTarget.GetLeveledActorBase()
 		if(akBase)
 			return akBase.GetName()
 		endif
-		return ""
+		return None
 	endfunction
 	
-	int function RememberPackage(Actor target)
+	int Function RememberPackage(Actor target)
 		if(!target)
 			return 0
 		endif
@@ -682,7 +690,7 @@ Scriptname _mindScript extends ReferenceAlias
 		return 0
 	endfunction
 	
-	function MoveTogether(int type = 1)
+	Function MoveTogether(int type = 1)
 		Actor target1 = iSexActor1
 		Actor target2 = iSexActor2
 		Actor target3 = iSexActor3
@@ -697,25 +705,15 @@ Scriptname _mindScript extends ReferenceAlias
 			endif
 		endif
 
-		if(!target1 || !target2)
+		if((!target1 || !target2) || (target1.IsDisabled() || target1.IsDead()) || (target2.IsDisabled() || target2.IsDead()) || (target3 && (target3.IsDisabled() || target3.IsDead())))
 			ClearSex()
 			return
 		endif
-
-		if(target1.IsDisabled() || target1.IsDead())
-			ClearSex()
-			return
-		endif
-
-		if(target2.IsDisabled() || target2.IsDead())
-			ClearSex()
-			return
-		endif
-
-		if(target3 && (target3.IsDisabled() || target3.IsDead()))
-			ClearSex()
-			return
-		endif
+		
+		Actor[] targets = new Actor[3]
+		targets[0] = target1
+		targets[1] = target2
+		targets[2] = target3
 
 		float radius = 256.0
 
@@ -725,33 +723,39 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 
 		Actor anchor = none
+		
+		int i = 0
+		while i < targets.Length
+			Actor target = targets[i]
+			if(target == PlayerRef)
+				anchor = target
+				i = targets.Length
+			EndIf
+			i += 1
+		EndWhile
 
-		if(PlayerRef == target1)
-			anchor = target1
-		elseif(PlayerRef == target2)
-			anchor = target2
-		elseif(target3 && PlayerRef == target3)
-			anchor = target3
+		if(!anchor)
+			i = 0
+			while i < targets.Length
+				Actor target = targets[i]
+				if(target && IsTied(target))
+					anchor = target
+					i = targets.Length
+				EndIf
+				i += 1
+			EndWhile
 		endif
 
 		if(!anchor)
-			if(IsTied(target1))
-				anchor = target1
-			elseif(IsTied(target2))
-				anchor = target2
-			elseif(target3 && IsTied(target3))
-				anchor = target3
-			endif
-		endif
-
-		if(!anchor)
-			if(!IsCharmed(target1))
-				anchor = target1
-			elseif(!IsCharmed(target2))
-				anchor = target2
-			elseif(target3 && !IsCharmed(target3))
-				anchor = target3
-			endif
+			i = 0
+			while i < targets.Length
+				Actor target = targets[i]
+				if(target && !IsCharmed(target))
+					anchor = target
+					i = targets.Length
+				EndIf
+				i += 1
+			EndWhile
 		endif
 
 		if(!anchor)
@@ -766,30 +770,21 @@ Scriptname _mindScript extends ReferenceAlias
 		if(target3)
 			moveType = 2
 		endif
-
-		if(anchor != target1)
-			int index = SetTravel(target1, anchor)
-			if(index >= 0)
-				iTravel[index] = type
-			endif
-		endif
-
-		if(anchor != target2)
-			int index = SetTravel(target2, anchor)
-			if(index >= 0)
-				iTravel[index] = type
-			endif
-		endif
-
-		if(target3 && anchor != target3)
-			int index = SetTravel(target3, anchor)
-			if(index >= 0)
-				iTravel[index] = type
-			endif
-		endif
+		
+		i = 0
+		while i < targets.Length
+			Actor target = targets[i]
+			if(target && anchor != target)
+				int index = SetTravel(target, anchor)
+				if(index >= 0)
+					iTravel[index] = type
+				endif
+			EndIf
+			i += 1
+		EndWhile
 	endfunction
 	
-	function OnTravel(int index, Actor target)
+	Function OnTravel(int index, Actor target)
 		int type = 0
 		if(index >= 0 && index < 5)
 			type = iTravel[index]
@@ -813,7 +808,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 	
-	function Pose(Actor target, bool ask = true, int index = -1)
+	Function Pose(Actor target, bool ask = true, int index = -1)
 		if(!target)
 			return
 		endif
@@ -878,7 +873,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function PlayAnim(Actor target, string idleAnimEvent)
+	Function PlayAnim(Actor target, string idleAnimEvent)
 		if(!target || !IsNPC(target))
 			return
 		endif
@@ -886,12 +881,8 @@ Scriptname _mindScript extends ReferenceAlias
 		Debug.SendAnimationEvent(target, idleAnimEvent)
 	endfunction
 
-	function Beat(Actor source, Actor target, bool blood = true)
-		if(!source || !target || !IsNPC(source) || !IsNPC(target) || target.IsDead())
-			return
-		endif
-
-		if(IsSex(source) || IsSex(target))
+	Function Beat(Actor source, Actor target, bool blood = true)
+		if(!source || !target || !IsNPC(source) || !IsNPC(target) || target.IsDead() || IsEngagedInSex(source) || IsEngagedInSex(target))
 			return
 		endif
 
@@ -949,15 +940,7 @@ Scriptname _mindScript extends ReferenceAlias
 		target.StopCombat()
 	endfunction
 
-	function EquipWeaponsToSource(Actor source, Form leftWeapon, Form rightWeapon)
-		if(leftWeapon)
-			source.EquipItemEx(leftWeapon, 2, false, false)
-		elseif(rightWeapon)
-			source.EquipItemEx(rightWeapon, 1, false, false)
-		endif
-	endfunction
-
-	function CreateBlood(Actor target)
+	Function CreateBlood(Actor target)
 		if(target)
 			target.PlayImpactEffect(bloodImpact)
 		endif
@@ -968,7 +951,7 @@ Scriptname _mindScript extends ReferenceAlias
 	
 		
 ;Begin Bathroom
-	function PlayFart(ObjectReference target, int fartId = -1)
+	Function PlayFart(ObjectReference target, int fartId = -1)
 		if(!target)
 			return
 		endif
@@ -986,19 +969,19 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	ObjectReference function CreateExcrement(Actor target)
+	ObjectReference Function CreateExcrement(Actor target)
 		return target.PlaceAtMe(defecateItem as Form)
 	endfunction
 
-	function CreateDefecate(Actor target, bool onself = false, bool onground = true)
+	Function CreateDefecate(Actor target, bool onself = false, bool onground = true)
 		CreateNasty(target, defecateImpact, onself, onground)
 	endfunction
 
-	function CreateUrine(Actor target, bool onself = false, bool onground = true)
+	Function CreateUrine(Actor target, bool onself = false, bool onground = true)
 		CreateNasty(target, urinateImpact, onself, onground)
 	endfunction
 
-	function CreateNasty(Actor target, ImpactDataSet data, bool onself = false, bool onground = true)
+	Function CreateNasty(Actor target, ImpactDataSet data, bool onself = false, bool onground = true)
 		if(onself) ; if anyone knows how to make this work let me know please
 			target.PlayImpactEffect(data, "NPC L Thigh [LThg]")
 			target.PlayImpactEffect(data, "NPC R Thigh [RThg]")
@@ -1008,8 +991,8 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	EndFunction
 	
-	function StartPeeScene(Actor owner, Actor target, bool isPee = true)
-		if(!owner || !target || !IsNPC(owner) || !IsNPC(target) || IsSex(owner) || IsSex(target) || curPeeType != 0)
+	Function StartPeeScene(Actor owner, Actor target, bool isPee = true)
+		if(!owner || !target || !IsNPC(owner) || !IsNPC(target) || IsEngagedInSex(owner) || IsEngagedInSex(target) || curPeeType != 0)
 			return
 		endif
 
@@ -1032,7 +1015,7 @@ Scriptname _mindScript extends ReferenceAlias
 		MoveTogether()
 	endfunction
 
-	event peeSceneStart(string eventName, string argString, float argNum, form sender)
+	Event peeSceneStart(string EventName, string argString, float argNum, form sender)
 		sslThreadController cont = SexLab.HookController(argString)
 		if(cont)
 			cont.UpdateTimer(60.0)
@@ -1040,13 +1023,13 @@ Scriptname _mindScript extends ReferenceAlias
 		UnregisterForModEvent("AnimationStart_peeScene")
 		curPeeType = -curPeeType
 		curPeeScene = cont
-	endEvent
+	EndEvent
 
-	event peeSceneEnd(string eventName, string argString, float argNum, form sender)
+	Event peeSceneEnd(string EventName, string argString, float argNum, form sender)
 		UnregisterForModEvent("AnimationEnd_peeScene")
-	endEvent
+	EndEvent
 
-	function DoBusiness(Actor target, bool isPee, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
+	Function DoBusiness(Actor target, bool isPee, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
 		if(!target || !IsNPC(target))
 			return
 		endif
@@ -1063,7 +1046,7 @@ Scriptname _mindScript extends ReferenceAlias
 		bool isStanding = standing > 0
 		int prevStatus = -1
 		
-		if(IsSex(target) || bound)
+		if(IsEngagedInSex(target) || bound)
 			skipAnimation = true
 		endif
 
@@ -1175,9 +1158,6 @@ Scriptname _mindScript extends ReferenceAlias
 		
 		If(isPee)
 			CreateUrine(target)
-		EndIf
-		
-		If(isPee)
 			if(duration > 0.0)
 				if(!skipSound)
 					int soundId = urinateSound.Play(target)
@@ -1248,15 +1228,15 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	EndFunction
 	
-	function Pee(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
+	Function Pee(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
 		DoBusiness(target, true, startDuration, duration, endDuration, standing, skipAnimation, skipSound)
 	endfunction
 
-	function Defecate(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
+	Function Defecate(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false)
 		DoBusiness(target, false, startDuration, duration, endDuration, standing, skipAnimation, skipSound)
 	endfunction
 
-	function DefecateAndPee(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false, bool peeFirst = false)
+	Function DefecateAndPee(Actor target, float startDuration = -1.0, float duration = -1.0, float endDuration = -1.0, int standing = 0, bool skipAnimation = false, bool skipSound = false, bool peeFirst = false)
 		if(!target || !IsNPC(target))
 			return
 		endif
@@ -1275,7 +1255,7 @@ Scriptname _mindScript extends ReferenceAlias
 		string anim2
 		int prevStatus = -1
 
-		if(IsSex(target) || bound)
+		if(IsEngagedInSex(target) || bound)
 			skipAnimation = true
 		endif
 
@@ -1679,7 +1659,7 @@ Scriptname _mindScript extends ReferenceAlias
 	
 ;Begin Frozen
 
-	function UpdateFreeze()
+	Function UpdateFreeze()
 		int aLength = refsFreeze.Length
 		int i = 0
 		While i < aLength
@@ -1690,7 +1670,7 @@ Scriptname _mindScript extends ReferenceAlias
 		EndWhile
 	endfunction
 
-	function SetFreeze(Actor target, int duration = 0)
+	Function SetFreeze(Actor target, int duration = 0)
 		if(!target)
 			return
 		endif
@@ -1707,7 +1687,7 @@ Scriptname _mindScript extends ReferenceAlias
 		EndWhile
 	endfunction
 
-	function Freeze(ReferenceAlias ref, int position, Actor target, int duration)
+	Function Freeze(ReferenceAlias ref, int position, Actor target, int duration)
 		fPrev[position] = RememberPackage(target)
 		fTime[position] = duration
 		RemoveAlias(target, false, false)
@@ -1716,7 +1696,7 @@ Scriptname _mindScript extends ReferenceAlias
 		target.EvaluatePackage()
 	EndFunction
 
-	function Unfreeze(ReferenceAlias ref, int position)
+	Function Unfreeze(ReferenceAlias ref, int position)
 		fTime[position] = fTime[position] - 1
 		if(fTime[position] == 0)
 			Actor target = ref.GetActorRef()
@@ -1735,7 +1715,7 @@ Scriptname _mindScript extends ReferenceAlias
 	
 ;Begin Charmed
 
-	int function GetCharmedIndex(Actor target)
+	int Function GetCharmedIndex(Actor target)
 		if(!target)
 			return -1
 		endif
@@ -1850,7 +1830,7 @@ Scriptname _mindScript extends ReferenceAlias
 	
 ;Begin Setters
 
-	function UpdateRelationship(Actor target, int index)
+	Function UpdateRelationship(Actor target, int index)
 		if(!target || !PlayerRef)
 			return
 		endif
@@ -1884,7 +1864,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetPersonality(Actor target, bool agg, int level)
+	Function SetPersonality(Actor target, bool agg, int level)
 		if(!target)
 			return
 		endif
@@ -1913,7 +1893,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetTough(Actor target, bool apply = true)
+	Function SetTough(Actor target, bool apply = true)
 		if(!target || target.IsDead())
 			return
 		endif
@@ -1942,7 +1922,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetFastMove(Actor target, bool apply = true)
+	Function SetFastMove(Actor target, bool apply = true)
 		if(!target)
 			return
 		endif
@@ -1978,7 +1958,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetPackage(Actor target, int packageType)
+	Function SetPackage(Actor target, int packageType)
 		if(!target)
 			return
 		endif
@@ -1996,7 +1976,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetDecideWear(Actor target, bool apply = true)
+	Function SetDecideWear(Actor target, bool apply = true)
 		if(!target || target.IsDisabled() || !IsNPC(target) || target.IsDead())
 			return
 		endif
@@ -2033,7 +2013,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 	
-	function SetCharmed(Actor target, bool apply = true)
+	Function SetCharmed(Actor target, bool apply = true)
 		if(!target)
 			return
 		endif
@@ -2139,7 +2119,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function SetFollow(Actor target)
+	Function SetFollow(Actor target)
 		if(!target)
 			return
 		endif
@@ -2174,7 +2154,7 @@ Scriptname _mindScript extends ReferenceAlias
 		target.EvaluatePackage()
 	endfunction
 
-	function SetWait(Actor target)
+	Function SetWait(Actor target)
 		if(!target)
 			return
 		endif
@@ -2195,7 +2175,7 @@ Scriptname _mindScript extends ReferenceAlias
 	endfunction
 
 	; Needs rework
-	function SetMarker(Actor target)
+	Function SetMarker(Actor target)
 		if(!target)
 			return
 		endif
@@ -2216,7 +2196,7 @@ Scriptname _mindScript extends ReferenceAlias
 	endfunction
 
 	; Needs rework
-	int function SetTravel(Actor target, ObjectReference marker)
+	int Function SetTravel(Actor target, ObjectReference marker)
 		if(!target || !marker)
 			return -1
 		endif
@@ -2246,7 +2226,7 @@ Scriptname _mindScript extends ReferenceAlias
 		return whichOne
 	endfunction
 
-	function SetFavor(Actor target)
+	Function SetFavor(Actor target)
 		if(!target)
 			return
 		endif
@@ -2254,7 +2234,7 @@ Scriptname _mindScript extends ReferenceAlias
 		target.SetDoingFavor(true)
 	endfunction
 
-	function SetRagdoll(Actor target, ObjectReference origin = none, float force = 0.1)
+	Function SetRagdoll(Actor target, ObjectReference origin = none, float force = 0.1)
 		if(!origin)
 			origin = PlayerRef
 		endif
@@ -2270,7 +2250,7 @@ Scriptname _mindScript extends ReferenceAlias
 
 ;Begin Bind Actions
 
-	function Tie(Actor target, int type = 0, Form eqItem = none)
+	Function Tie(Actor target, int type = 0, Form eqItem = none)
 		if(!target || target.IsDisabled() || target.IsDead() || !IsNPC(target))
 			return
 		endif
@@ -2334,7 +2314,7 @@ Scriptname _mindScript extends ReferenceAlias
 		EndIf
 	EndFunction
 
-	bool function Untie(Actor target)
+	bool Function Untie(Actor target)
 		if(!target)
 			return false
 		endif
@@ -2380,35 +2360,39 @@ Scriptname _mindScript extends ReferenceAlias
 ;Begin Sex Actions
 
 	Function SetTargetForSex(Actor akTarget)
-		if(!(iSexActor1 == akTarget || iSexActor2 == akTarget || iSexActor3 == akTarget))
-			if(!iSexActor1)
-				iSexActor1 = akTarget
-			elseif(!iSexActor2)
-				iSexActor2 = akTarget
-			else
-				iSexActor3 = akTarget
+		if(iSexActor1 == akTarget || iSexActor2 == akTarget || iSexActor3 == akTarget)
+			Return
+		EndIf
+		
+		if(!iSexActor1)
+			iSexActor1 = akTarget
+		elseif(!iSexActor2)
+			iSexActor2 = akTarget
+		else
+			iSexActor3 = akTarget
+		endif
+		
+		if(akTarget.GetLeveledActorBase())
+			Debug.Notification("Targeted " + GetActorName(akTarget) + ".")
+		endif
+		
+		if(!IsNPC(akTarget))
+			if(!iSexTag1)
+				iSexTag1 = "Creature"
+			elseif(!iSexTag2)
+				iSexTag2 = "Creature"
+			elseif(!iSexTag3)
+				iSexTag3 = "Creature"
 			endif
-			if(akTarget.GetLeveledActorBase())
-				Debug.Notification("Targeted " + GetActorName(akTarget) + ".")
-			endif
-			if(!IsNPC(akTarget))
-				if(!iSexTag1)
-					iSexTag1 = "Creature"
-				elseif(!iSexTag2)
-					iSexTag2 = "Creature"
-				elseif(!iSexTag3)
-					iSexTag3 = "Creature"
-				endif
-			endif
-			if(iSexActor1 && iSexActor2 && (iTwoOthers == 0 || iSexActor3))
-				MoveTogether()
-			else
-				Debug.Notification("Use the ability again to target another participant.")
-			endif
+		endif
+		if(iSexActor1 && iSexActor2 && (iTwoOthers == 0 || iSexActor3))
+			MoveTogether()
+		else
+			Debug.Notification("Use the ability again to target another participant.")
 		endif
 	EndFunction
 
-	bool function TryStartSex(string hookName = "", bool actor1IsVictim = false, bool actor2IsVictim = false, bool actor3IsVictim = false)
+	bool Function TryStartSex(string hookName = "", bool actor1IsVictim = false, bool actor2IsVictim = false, bool actor3IsVictim = false)
 		Actor man = iSexActor1
 		Actor woman = iSexActor2
 		Actor third = iSexActor3
@@ -2510,20 +2494,26 @@ Scriptname _mindScript extends ReferenceAlias
 		return true
 	endfunction
 
-	function Masturbate(Actor target)
-		if(!target || !IsNPC(target) || target.IsDead() || IsSex(target))
+	Function Masturbate(Actor target)
+		if(!target || !IsNPC(target) || target.IsDead() || IsEngagedInSex(target))
 			return
 		endif
 
 		Actor[] sexActors = SexLab.MakeActorArray(target)
 
-		sslBaseAnimation[] anims = SexLab.PickAnimationsByActors(sexActors)
-		sslBaseAnimation[] masturbationAnims = GetAnimationsWithTag(anims, "Masturbation")
+		sslBaseAnimation[] anims = GetAnimationsWithTag(SexLab.PickAnimationsByActors(sexActors, 64), "Masturbation")
+		if(anims[0] == None)
+			Debug.MessageBox("Failed to Start Masturbation due to not finding an animation")
+			Return
+		EndIf
+		sslBaseAnimation[] masturbationAnims = new sslBaseAnimation[1]
+		int pickedAnim = Utility.RandomInt(0, anims.Length)
+		masturbationAnims[0] = anims[pickedAnim]
 		SexLab.StartSex(sexActors, masturbationAnims, allowBed = target == PlayerRef)
 	endfunction
 	
 	sslBaseAnimation[] Function GetAnimationsWithTag(sslBaseAnimation[] anims, string tag)
-		sslBaseAnimation[] taggedAnims = new sslBaseAnimation[127]
+		sslBaseAnimation[] taggedAnims = new sslBaseAnimation[64]
 		int currentTaggedIdx = 0
 		string[] tags = new string[1]
 		tags[0] = tag
@@ -2539,12 +2529,12 @@ Scriptname _mindScript extends ReferenceAlias
 		return taggedAnims
 	EndFunction
 
-	function Necro(Actor source, Actor target)
+	Function Necro(Actor source, Actor target)
 		if(!source || !target || !target.IsDead() || source.IsDead())
 			return
 		endif
 
-		if(IsSex(source) || IsSex(target))
+		if(IsEngagedInSex(source) || IsEngagedInSex(target))
 			return
 		endif
 		
@@ -2585,16 +2575,16 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	event NecroStart(string EventName, string argString, Float argNum, form sender)
+	Event NecroStart(string EventName, string argString, Float argNum, form sender)
 		Debug.Trace("Starting Necro with target being " + argString)
 		Actor target = SexLab.HookVictim(argString)
 		if(target)
 			target.SetActorValue("Paralysis", 0.0)
 		endif
 		UnregisterForModEvent("AnimationStart_Necro")
-	endevent
+	EndEvent
 
-	event NecroEnd(string EventName, string argString, Float argNum, form sender)
+	Event NecroEnd(string EventName, string argString, Float argNum, form sender)
 		Debug.Trace("Ending Necro with target being " + argString)
 		Actor target = SexLab.HookVictim(argString)
 		if(target)
@@ -2602,7 +2592,7 @@ Scriptname _mindScript extends ReferenceAlias
 			target.KillEssential()
 		endif
 		UnregisterForModEvent("AnimationEnd_Necro")
-	endevent
+	EndEvent
 
 ;End Sex Actions
 
@@ -2610,7 +2600,7 @@ Scriptname _mindScript extends ReferenceAlias
 
 ;Begin Boolean Checks
 	
-	bool function IsNPC(Actor target, bool allowPlayer = true)
+	bool Function IsNPC(Actor target, bool allowPlayer = true)
 		if(!target)
 			return false
 		endif
@@ -2618,49 +2608,31 @@ Scriptname _mindScript extends ReferenceAlias
 		return (allowPlayer && target == PlayerRef) || target.HasKeyword(npcKeyword)
 	endfunction
 
-	bool function IsCharmed(Actor target)
+	bool Function IsCharmed(Actor target)
 		return IsOneOf(refsCharm, target)
 	endfunction
 
-	bool function IsFollowing(Actor target)
+	bool Function IsFollowing(Actor target)
 		return IsOneOf(refsFollow, target)
 	endfunction
 
-	bool function IsMarker(Actor target)
+	bool Function IsMarker(Actor target)
 		return IsOneOf(refsGoMarker, target)
 	endfunction
 
-	bool function IsWaiting(Actor target)
+	bool Function IsWaiting(Actor target)
 		return IsOneOf(refsWait, target)
 	endfunction
 
-	bool function IsFrozen(Actor target)
+	bool Function IsFrozen(Actor target)
 		return IsOneOf(refsFreeze, target)
 	endfunction
 
-	bool function IsTravel(Actor target)
+	bool Function IsTravel(Actor target)
 		return IsOneOf(refsTravel, target)
 	endfunction
 
-	bool Function IsOneOf(ReferenceAlias[] refAliases, Actor target)
-		if(!target)
-			return false
-		endif
-		
-		int aLength = refAliases.Length
-		int i = 0
-		bool isOne = False
-		While i < aLength
-			If(refAliases[i].GetActorRef() == target)
-				isOne = True
-				i = aLength
-			EndIf
-			i += 1
-		EndWhile
-		return isOne
-	EndFunction
-
-	bool function IsTied(Actor target)
+	bool Function IsTied(Actor target)
 		if(!target)
 			return false
 		endif
@@ -2676,9 +2648,13 @@ Scriptname _mindScript extends ReferenceAlias
 		return !target.IsInFaction(undressedFaction)
 	endfunction
 
-	;Is engaged in sex
-	bool function IsSex(Actor target)
+	bool Function IsEngagedInSex(Actor target)
 		return SexLab.IsActorActive(target)
+	EndFunction
+	
+	;Is engaged in sex
+	bool Function IsSex(Actor target)
+		return IsEngagedInSex(target)
 	endfunction
 
 	bool Function IsReferenceCharmed(ReferenceAlias refAlias)
@@ -2714,12 +2690,14 @@ Scriptname _mindScript extends ReferenceAlias
 		EndWhile
 	EndFunction
 
-	function RemoveAlias(Actor target, bool calculate = true, bool travel = false)
+	Function RemoveAlias(Actor target, bool calculate = true, bool travel = false)
 		if(!target)
 			return
 		endif
-
-		if(!travel)
+		
+		if(travel)
+			RemoveAliasOf(refsTravel, target)
+		Else
 			target.SetDoingFavor(false)
 			target.SetActorValue("WaitingForPlayer", 0.0)
 			
@@ -2727,15 +2705,13 @@ Scriptname _mindScript extends ReferenceAlias
 			RemoveAliasOf(refsWait, target)
 			RemoveAliasOf(refsFreeze, target, false, true)
 			RemoveAliasOf(refsGoMarker, target)
-		else
-			RemoveAliasOf(refsTravel, target)
 		endif
 		if(calculate)
 			target.EvaluatePackage()
 		endif
 	endfunction
 
-	function SetNone(Actor target)
+	Function SetNone(Actor target)
 		RemoveAlias(target, true)
 	endfunction
 
@@ -2757,7 +2733,7 @@ Scriptname _mindScript extends ReferenceAlias
 		EndWhile
 	EndFunction
 
-	function ResetAnim(Actor target)
+	Function ResetAnim(Actor target)
 		if(!target)
 			return
 		endif
@@ -2767,7 +2743,7 @@ Scriptname _mindScript extends ReferenceAlias
 	endfunction
 
 	; Needs rework
-	function ResetScript(bool silent = false)
+	Function ResetScript(bool silent = false)
 		ClearSex()
 
 		ResetRefs(refsBound, true)
@@ -2783,7 +2759,7 @@ Scriptname _mindScript extends ReferenceAlias
 		endif
 	endfunction
 
-	function ClearSex()
+	Function ClearSex()
 		iSexActor1 = none
 		iSexActor2 = none
 		iSexActor3 = none

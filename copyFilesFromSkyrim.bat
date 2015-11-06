@@ -6,4 +6,5 @@ xcopy /s/y "C:\Program Files (x86)\Steam\SteamApps\common\skyrim\Data\Scripts\So
 xcopy /s/y "C:\Program Files (x86)\Steam\SteamApps\common\skyrim\Data\Scripts\Source\_mindconfig.psc" Data\Scripts\Source
 xcopy /s/y "C:\Program Files (x86)\Steam\SteamApps\common\skyrim\Data\Scripts\Source\_mindeffectscript.psc" Data\Scripts\Source
 xcopy /s/y "C:\Program Files (x86)\Steam\SteamApps\common\skyrim\Data\Scripts\Source\_mindscript.psc" Data\Scripts\Source
+xcopy /s/y "C:\Program Files (x86)\Steam\SteamApps\common\skyrim\Data\Scripts\Source\__NuttyExtensions.psc" Data\Scripts\Source
 pause
