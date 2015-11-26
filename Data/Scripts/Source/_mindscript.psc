@@ -2499,10 +2499,11 @@ Import __NuttyExtensions
 			return
 		endif
 
-		Actor[] sexActors = SexLab.MakeActorArray(target)
+		Actor[] sexActors = new Actor[1]
+		sexActors[0] = target
 
 		sslBaseAnimation[] anims = GetAnimationsWithTag(SexLab.PickAnimationsByActors(sexActors, 64), "Masturbation")
-		if(anims[0] == None)
+		if(anims == None || anims.Length == 0)
 			Debug.MessageBox("Failed to Start Masturbation due to not finding an animation")
 			Return
 		EndIf
