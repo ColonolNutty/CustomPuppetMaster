@@ -49,13 +49,7 @@ int[] OIDs
 event OnConfigInit()
 	OIDs = new int[38]
 	LogDebug("OnConfigInit")
-	MyCustomSettings()
 endevent
-
-Function MyCustomSettings()
-	globalSpells.SetValueInt(0)
-	basicKey = 25
-EndFunction
 
 Function LogDebug(string text)
 	Debug.Trace("_mindConfig - " + text)
